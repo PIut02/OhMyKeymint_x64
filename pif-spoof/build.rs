@@ -33,7 +33,7 @@ fn main() {
     assert!(status.success(), "Engineer bridge build failed");
     println!(
         "cargo:rustc-env=OMK_ENGINEER_DEX={}",
-        root.join("target/engineer-bridge").join(target).join("classes.dex").display()
+        root.join("target/engineer-bridge").join(&target).join("classes.dex").display()
     );
     // On x86_64 the inline property hook uses Dobby's trampoline (the AArch64
     // path patches the export directly). Link the same prefab already fetched

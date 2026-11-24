@@ -1,6 +1,6 @@
 // AArch64-only inline-hook helpers are compiled on other targets for the shared
 // tests but have no non-test caller there.
-#![cfg_attr(not(target_arch = "aarch64"), allow(dead_code))]
+#![cfg_attr(not(target_arch = "aarch64"), allow(dead_code, unused_imports))]
 
 use std::{
     ffi::{CStr, CString},
