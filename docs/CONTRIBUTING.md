@@ -22,8 +22,9 @@ responsibility for the contribution.
   inspect the directly relevant modules for equivalent behavior. Reuse or
   minimally extend existing code.
 - Android is the only production and acceptance target. Target-specific build,
-  check, and test commands must use `aarch64-linux-android`; host or x86_64
-  success alone is insufficient.
+  check, and test commands must use a supported Android target
+  (`aarch64-linux-android` or `x86_64-linux-android`); host success alone is
+  insufficient.
 - Preserve compatibility with Android 12-17, Linux kernels 4.14-6.18, and newer
   LTS kernels. Do not claim that a platform was validated without evidence.
 - Do not add a non-Rust product.

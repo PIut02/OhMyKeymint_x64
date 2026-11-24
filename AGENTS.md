@@ -5,7 +5,8 @@
 - Before adding a method, helper, abstraction, configuration field, or utility, inspect the
   directly relevant modules for equivalent behavior. Reuse or minimally extend existing code.
 - Android is the only production and acceptance target. Target-specific build, check, and test
-  commands must use `aarch64-linux-android`; host or x86_64 success alone is insufficient.
+  commands must use a supported Android target (`aarch64-linux-android` or `x86_64-linux-android`);
+  host success alone is insufficient.
 - Compatibility scope: Android 12-17; Linux kernels 4.14-6.18 and newer LTS kernels. Preserve
   behavior across this range, and do not claim a platform was validated without evidence.
 - Do not introduce new non-Rust product or runtime code without explicit approval. Existing Python
@@ -130,6 +131,8 @@
   cargo fmt --all -- --check
   cargo clippy --target aarch64-linux-android --workspace --all-targets -- -D warnings
   cargo test --target aarch64-linux-android --workspace --no-run
+  cargo clippy --target x86_64-linux-android --workspace --all-targets -- -D warnings
+  cargo test --target x86_64-linux-android --workspace --no-run
   ```
 
 - Always follow [Rust Style Guide](https://doc.rust-lang.org/style-guide/index.html)

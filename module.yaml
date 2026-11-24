@@ -20,6 +20,7 @@ compatibility:
   androidMinApi: 31
   architectures:
     - arm64-v8a
+    - x86_64
 
 release:
   assetPattern: "OhMyKeymint-*-release.zip"

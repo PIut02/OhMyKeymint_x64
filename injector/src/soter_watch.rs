@@ -82,13 +82,14 @@ pub fn run() -> Result<()> {
                 if injected.contains(&id) {
                     continue;
                 }
-                // The payload is the arm64 binary. Never ptrace a 32-bit app.
+                // The injected payload matches the build target. Never ptrace a 32-bit app.
+                const EM_NATIVE: u16 = if cfg!(target_arch = "aarch64") { 183 } else { 62 };
                 let mut elf = [0; 20];
                 if !fs::File::open(format!("/proc/{pid}/exe"))
                     .and_then(|mut f| f.read_exact(&mut elf))
                     .is_ok()
                     || elf[..5] != [0x7f, b'E', b'L', b'F', 2]
-                    || u16::from_le_bytes([elf[18], elf[19]]) != 183
+                    || u16::from_le_bytes([elf[18], elf[19]]) != EM_NATIVE
                 {
                     unsupported += 1;
                     continue;
@@ -121,7 +122,7 @@ pub fn run() -> Result<()> {
             if live.is_empty() {
                 "waiting_for_soterserver"
             } else if unsupported == live.len() {
-                "host_not_arm64_or_unreadable"
+                "host_arch_mismatch_or_unreadable"
             } else if injected.is_empty() {
                 "waiting_for_injection"
             } else {

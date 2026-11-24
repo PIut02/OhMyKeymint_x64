@@ -261,7 +261,7 @@ pub fn setup_remote_call(
         let mut sp = regs.rsp as usize;
 
         // set up arguments in registers
-        if args.len() > 0 {
+        if !args.is_empty() {
             regs.rdi = args[0] as u64;
         }
         if args.len() > 1 {
