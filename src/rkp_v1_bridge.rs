@@ -21,7 +21,9 @@ use std::{
 #[cfg(all(target_os = "android", target_arch = "aarch64"))]
 use std::time::Duration;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, Result};
+#[cfg(all(target_os = "android", target_arch = "aarch64"))]
+use anyhow::Context;
 
 #[cfg(all(target_os = "android", target_arch = "aarch64"))]
 const DATA_DIR: &str = crate::root_path!("data");
@@ -264,8 +266,10 @@ fn trusted_system_apk(path: &Path) -> bool {
 /// An RKP APK ships on a read-only system image or erofs APEX, so its contents
 /// cannot be replaced. Android 16 mounts `rkpdapp.apk` as system (1000) rather
 /// than root, and only an unwritable regular file is accepted.
+#[cfg(any(all(target_os = "android", target_arch = "aarch64"), test))]
 const SYSTEM_UID: u32 = 1000;
 
+#[cfg(any(all(target_os = "android", target_arch = "aarch64"), test))]
 fn accepts_system_apk(uid: u32, mode: u32) -> bool {
     matches!(uid, 0 | SYSTEM_UID) && mode & 0o022 == 0
 }

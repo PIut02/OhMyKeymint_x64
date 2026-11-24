@@ -541,7 +541,7 @@ fn install_inline_property_hook() -> Result<usize, String> {
     let mut original: *mut c_void = ptr::null_mut();
     let result = unsafe {
         DobbyHook(
-            target.cast_mut(),
+            target,
             property_read_dobby_hook as *const () as *mut c_void,
             &mut original,
         )
