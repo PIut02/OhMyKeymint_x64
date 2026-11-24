@@ -328,6 +328,7 @@ def modify_module_prop(
     git_count: str,
     git_hash: str,
     release: bool,
+    abi: str,
 ) -> None:
     module_prop_path = stage_dir / "module.prop"
     if not module_prop_path.exists():
@@ -338,6 +339,11 @@ def modify_module_prop(
     content = module_prop_path.read_text(encoding="utf-8")
     content = content.replace("${versionName}", version_name)
     content = content.replace("${versionCode}", git_count)
+    if abi == "x86_64":
+        content = content.replace(
+            "https://raw.githubusercontent.com/ITxiao6666/OhMyKeymint/changelog/update.json",
+            "https://raw.githubusercontent.com/ITxiao6666/OhMyKeymint/changelog/update-x86_64.json",
+        )
     write_text_lf(module_prop_path, content)
     print(f"Updated module.prop: versionName={version_name}, versionCode={git_count}")
 
@@ -488,7 +494,7 @@ def build_package_for_abi(
             )
         copy_zygisk_payload(pif_payload, abi, stage_dir)
 
-        modify_module_prop(stage_dir, version, git_count, git_hash, release)
+        modify_module_prop(stage_dir, version, git_count, git_hash, release, abi)
         normalize_module_text_files(stage_dir)
         generate_webroot_manifest(stage_dir)
         generate_hash_files(stage_dir)

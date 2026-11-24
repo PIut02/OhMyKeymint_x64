@@ -162,6 +162,16 @@ fn do_inject(pid: Pid, self_path: &std::path::Path, channels: Option<[i32; 2]>) 
         self_path.display(),
     );
     let mut regs = sys::get_regs(pid)?;
+    // x86-64 SysV reserves 128 bytes below RSP as the red zone, owned by the
+    // interrupted thread. Move our scratch stack below it before any push so
+    // remote calls cannot overwrite live locals of the stopped thread.
+    #[cfg(target_arch = "x86_64")]
+    {
+        regs.rsp = regs
+            .rsp
+            .checked_sub(128)
+            .context("Stack overflow when clearing the x86_64 red zone")?;
+    }
 
     let local_maps = omhook::read_self_maps().context("failed to read injector maps")?;
     let remote_maps =

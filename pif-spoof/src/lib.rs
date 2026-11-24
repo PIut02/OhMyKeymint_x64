@@ -1,3 +1,7 @@
+// AArch64-only inline-hook helpers are compiled on other targets for the shared
+// tests but have no non-test caller there.
+#![cfg_attr(not(target_arch = "aarch64"), allow(dead_code))]
+
 use std::{
     ffi::{CStr, CString},
     fs,
@@ -27,7 +31,6 @@ use zygisk_api::{
 use libc::{c_char, c_void};
 
 mod engineer;
-#[cfg(target_arch = "aarch64")]
 mod property_area;
 
 const PROFILE_PATH: &str = "/data/misc/keystore/omk/data/pif_fingerprint.json";
@@ -169,7 +172,6 @@ impl ZygiskModule for PifSpoofModule {
                 log_android(&format!("PIF property table initialization failed: {error}"));
             });
             let mut private_properties = false;
-            #[cfg(target_arch = "aarch64")]
             if let Some(values) = PROPERTY_SPOOF.get() {
                 match property_area::install(values) {
                     Ok(count) => {
@@ -486,9 +488,75 @@ fn install_inline_property_hook() -> Result<usize, String> {
     Ok(INLINE_PATCH_BYTES)
 }
 
-#[cfg(not(target_arch = "aarch64"))]
+#[cfg(target_arch = "x86_64")]
+unsafe extern "C" {
+    fn DobbyHook(
+        address: *mut c_void,
+        replacement: *mut c_void,
+        original: *mut *mut c_void,
+    ) -> libc::c_int;
+}
+
+#[cfg(target_arch = "x86_64")]
+static DOBBY_ORIGINAL_PROPERTY_READ: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// x86_64 has no AArch64-style tiny tail-call wrapper to decode. Dobby builds a
+/// trampoline for the original export, so the hook calls it with a wrapped
+/// callback instead of reconstructing the C++ member call ourselves.
+#[cfg(target_arch = "x86_64")]
+unsafe extern "C" fn property_read_dobby_hook(
+    property: *const c_void,
+    callback: Option<PropertyCallback>,
+    cookie: *mut c_void,
+) {
+    let original = DOBBY_ORIGINAL_PROPERTY_READ.load(Ordering::Acquire);
+    if original.is_null() {
+        return;
+    }
+    let original: PropertyReadCallbackApi = unsafe { std::mem::transmute(original) };
+    let Some(callback) = callback else {
+        unsafe { original(property, None, cookie) };
+        return;
+    };
+    let context = CallbackContext { callback, cookie };
+    unsafe {
+        original(
+            property,
+            Some(property_value_callback),
+            (&context as *const CallbackContext).cast_mut().cast(),
+        )
+    };
+}
+
+#[cfg(target_arch = "x86_64")]
 fn install_inline_property_hook() -> Result<usize, String> {
-    Err("the inline property callback hook requires AArch64".to_string())
+    if INLINE_PROPERTY_READ_HOOKED.get().is_some() {
+        return Ok(0);
+    }
+    if PROPERTY_SPOOF.get().is_none() {
+        return Err("no validated profile is loaded".to_string());
+    }
+    let target = resolve_symbol_address(PROPERTY_READ_SYMBOL)
+        .ok_or_else(|| "__system_property_read_callback was not exported by libc".to_string())?;
+    let mut original: *mut c_void = ptr::null_mut();
+    let result = unsafe {
+        DobbyHook(
+            target.cast_mut(),
+            property_read_dobby_hook as *const () as *mut c_void,
+            &mut original,
+        )
+    };
+    if result != 0 || original.is_null() {
+        return Err(format!("Dobby could not hook the property callback export ({result})"));
+    }
+    DOBBY_ORIGINAL_PROPERTY_READ.store(original, Ordering::Release);
+    let _ = INLINE_PROPERTY_READ_HOOKED.set(());
+    Ok(1)
+}
+
+#[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
+fn install_inline_property_hook() -> Result<usize, String> {
+    Err("the inline property callback hook requires AArch64 or x86_64".to_string())
 }
 
 fn initialize_property_spoof(profile: &PifProfile) -> Result<(), String> {
@@ -1034,7 +1102,7 @@ fn patch_property_read_callback(
     Ok(())
 }
 
-#[cfg(all(target_arch = "aarch64", not(test)))]
+#[cfg(not(test))]
 fn ensure_single_threaded() -> Result<(), String> {
     let mut count = 0usize;
     for entry in fs::read_dir("/proc/self/task")
@@ -1051,7 +1119,7 @@ fn ensure_single_threaded() -> Result<(), String> {
     if count == 1 { Ok(()) } else { Err("process thread list was empty".to_string()) }
 }
 
-#[cfg(all(target_arch = "aarch64", test))]
+#[cfg(test)]
 fn ensure_single_threaded() -> Result<(), String> {
     // libtest keeps a harness thread alive even with --test-threads=1. The
     // ignored Android runtime test invokes the patch before any other work in
@@ -1059,7 +1127,6 @@ fn ensure_single_threaded() -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(target_arch = "aarch64")]
 fn change_memory_protection(
     start: usize,
     length: usize,
@@ -1069,7 +1136,6 @@ fn change_memory_protection(
     if result == 0 { Ok(()) } else { Err(std::io::Error::last_os_error()) }
 }
 
-#[cfg(target_arch = "aarch64")]
 fn fatal_patch_failure(message: &str) -> ! {
     log_android(message);
     unsafe { libc::_exit(127) }

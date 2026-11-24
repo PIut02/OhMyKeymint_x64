@@ -35,4 +35,19 @@ fn main() {
         "cargo:rustc-env=OMK_ENGINEER_DEX={}",
         root.join("target/engineer-bridge").join(target).join("classes.dex").display()
     );
+    // On x86_64 the inline property hook uses Dobby's trampoline (the AArch64
+    // path patches the export directly). Link the same prefab already fetched
+    // for the engineer bridge so both ABIs keep the same hook coverage.
+    if target == "x86_64-linux-android" {
+        let deps = root.join("target/engineer-deps");
+        let prefab = deps.join("dobby-prefab-251f48ae2168");
+        let library_dir = prefab.join("prefab/modules/dobby/libs/android.x86_64");
+        assert!(library_dir.join("libdobby.a").is_file(), "Dobby x86_64 library missing");
+        println!("cargo:rustc-link-search=native={}", library_dir.display());
+        println!("cargo:rustc-link-lib=static=dobby");
+        // Dobby is C++; the Rust cdylib does not pull in the NDK C++ runtime.
+        println!("cargo:rustc-link-lib=static=c++_static");
+        println!("cargo:rustc-link-lib=c++abi");
+        println!("cargo:rustc-link-lib=dl");
+    }
 }
