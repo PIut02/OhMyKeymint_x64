@@ -8,7 +8,10 @@ unsound = "all"
 unmaintained = "all"
 yanked = "deny"
 maximum-db-staleness = "P7D"
-ignore = []
+ignore = [
+    # No safe upgrade; chrono is only pulled in transitively by log4rs and watchdog.
+    "RUSTSEC-2026-0543",
+]
 
 [licenses]
 confidence-threshold = 0.93
