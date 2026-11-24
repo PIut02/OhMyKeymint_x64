@@ -103,7 +103,7 @@ def build(target: str, sdk: Path, ndk: Path) -> Path:
         ",".join(str(byte) for byte in data) + "};\n", encoding="ascii")
     run([cmake, "-S", ROOT / "runtime/engineer", "-B", out / "native", "-G", "Ninja",
          f"-DCMAKE_MAKE_PROGRAM={ninja}", f"-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake",
-         f"-DANDROID_ABI={abi}", "-DANDROID_PLATFORM=android-26", "-DANDROID_STL=none",
+         f"-DANDROID_ABI={abi}", "-DANDROID_PLATFORM=android-29", "-DANDROID_STL=none",
          "-DCMAKE_BUILD_TYPE=Release", f"-DOMK_LSPLANT={lsplant}", f"-DOMK_DOBBY={dobby_prefab}",
          f"-DOMK_CXX={cxx}", f"-DOMK_GENERATED={out}"])
     run([cmake, "--build", out / "native", "--target", "omk_engineer", "--parallel", "4"])
