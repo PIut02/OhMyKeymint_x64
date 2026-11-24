@@ -21,9 +21,9 @@ use std::{
 #[cfg(all(target_os = "android", target_arch = "aarch64"))]
 use std::time::Duration;
 
-use anyhow::{anyhow, bail, Result};
 #[cfg(all(target_os = "android", target_arch = "aarch64"))]
 use anyhow::Context;
+use anyhow::{anyhow, bail, Result};
 
 #[cfg(all(target_os = "android", target_arch = "aarch64"))]
 const DATA_DIR: &str = crate::root_path!("data");

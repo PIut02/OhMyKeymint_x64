@@ -540,11 +540,7 @@ fn install_inline_property_hook() -> Result<usize, String> {
         .ok_or_else(|| "__system_property_read_callback was not exported by libc".to_string())?;
     let mut original: *mut c_void = ptr::null_mut();
     let result = unsafe {
-        DobbyHook(
-            target,
-            property_read_dobby_hook as *const () as *mut c_void,
-            &mut original,
-        )
+        DobbyHook(target, property_read_dobby_hook as *const () as *mut c_void, &mut original)
     };
     if result != 0 || original.is_null() {
         return Err(format!("Dobby could not hook the property callback export ({result})"));
